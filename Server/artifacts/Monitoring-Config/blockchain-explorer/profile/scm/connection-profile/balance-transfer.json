@@ -1,0 +1,65 @@
+{
+	"name": "balance-transfer",
+	"version": "1.0.0",
+	"license": "Apache-2.0",
+	"client": {
+		"tlsEnable": true,
+		"adminUser": "admin",
+		"adminPassword": "adminpw",
+		"enableAuthentication": false,
+		"organization": "Org1",
+		"connection": {
+			"timeout": {
+				"peer": {
+					"endorser": "300"
+				},
+				"orderer": "300"
+			}
+		}
+	},
+	"channels": {
+		"mychannel": {
+			"orderers": ["orderer1.org1.iranscm.tk"],
+			"peers": {
+				"peer0.org1.iranscm.tk": {}	
+			}
+		}
+	},
+	"organizations": {
+		"Org1": {
+			"mspid": "Org1MSP",
+			"adminPrivateKey": {
+				"path": "/tmp/crypto/peerOrganizations/org1.iranscm.tk/users/Admin@org1.iranscm.tk/msp/keystore/0f6297b5048a7949b266ee9ac66c8d256e8b6196cecb3b5d63d138af51eaeff0_sk"
+			},
+			"signedCert": {
+				"path": "/tmp/crypto/peerOrganizations/org1.iranscm.tk/users/Admin@org1.iranscm.tk/msp/signcerts/Admin@org1.iranscm.tk-cert.pem"
+			}
+		}
+	},
+
+	"peers": {
+		"peer0.org1.iranscm.tk": {
+          "tlsCACerts": {
+            "path": "/tmp/crypto/peerOrganizations/org1.iranscm.tk/peers/peer0.org1.iranscm.tk/tls/ca.crt"
+          },
+          "url": "grpcs://peer0.org1.iranscm.tk:7051",
+          "eventUrl": "grpcs://peer0.org1.iranscm.tk:7053",
+          "grpcOptions": {
+            "ssl-target-name-override": "peer0.org1.iranscm.tk"
+          }
+        }
+	},
+	
+	"orderers": {
+        "orderer1.org1.iranscm.tk": {
+		  "tlsCACerts": {
+            "path": "/tmp/crypto/ordererOrganizations/org1.iranscm.tk/orderers/orderer1.org1.iranscm.tk/tls/ca.crt"
+          },
+          "url": "grpcs://orderer1.org1.iranscm.tk:7050",
+          "grpcOptions": {
+            "ssl-target-name-override": "orderer1.org1.iranscm.tk"
+          }
+        }
+      }
+	
+}

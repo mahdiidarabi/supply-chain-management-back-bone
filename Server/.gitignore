@@ -1,0 +1,10 @@
+node_modules
+package-lock.json
+fabric-client-kv-org1
+fabric-client-kv-org2
+fabric-client-kv-org2-key
+fabric-client-kv-org1-key
+./artifacts/fabricClientKeyValue/*
+.serverConfig.js.swo
+nohup.out
+serverConfig.js.save

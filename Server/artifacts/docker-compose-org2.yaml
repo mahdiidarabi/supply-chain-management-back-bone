@@ -1,0 +1,135 @@
+#
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+
+  ca.org2.iranscm.tk:
+    image: hyperledger/fabric-ca
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-org2
+      - FABRIC_CA_SERVER_CA_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.iranscm.tk-cert.pem
+      - FABRIC_CA_SERVER_CA_KEYFILE=/etc/hyperledger/fabric-ca-server-config/5ccb6031d30ab486105c0a8054af4015b3d872d851d6a330e9fb8ba84181b4d1_sk
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.iranscm.tk-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/5ccb6031d30ab486105c0a8054af4015b3d872d851d6a330e9fb8ba84181b4d1_sk
+      # OPERATION
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=ca.org2.iranscm.tk:9443
+      - FABRIC_CA_SERVER_OPERATIONS_TLS_ENABLED=false
+      - FABRIC_CA_SERVER_OPERATIONS_TLS_KEY_FILE=/etc/hyperledger/fabric-ca-server-config/5ccb6031d30ab486105c0a8054af4015b3d872d851d6a330e9fb8ba84181b4d1_sk
+      - FABRIC_CA_SERVER_OPERATIONS_TLS_CERT_FILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.iranscm.tk-cert.pem
+      - FABRIC_CA_SERVER_OPERATIONS_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric-ca-server-config/ca.org2.iranscm.tk-cert.pem
+      - FABRIC_CA_SERVER_METRICS_PROVIDER=prometheus
+    ports:
+      - "8054:7054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ./channel/crypto-config/peerOrganizations/org2.iranscm.tk/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_org2
+    logging:
+      options:
+        max-size: 50m
+
+  orderer1.org2.iranscm.tk:
+    container_name: orderer1.org2.iranscm.tk
+    image: hyperledger/fabric-orderer
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_GENESISMETHOD=file
+      - ORDERER_GENERAL_GENESISFILE=/etc/hyperledger/configtx/genesis.block
+      - ORDERER_GENERAL_LOCALMSPID=Orderer2MSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/etc/hyperledger/crypto/orderer/msp
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/etc/hyperledger/crypto/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/etc/hyperledger/crypto/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/etc/hyperledger/crypto/orderer/tls/ca.crt]
+      #raft setting
+      - ORDERER_KAFKA_TOPIC_REPLICATIONFACTOR=1
+      - ORDERER_KAFKA_VERBOSE=true
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/etc/hyperledger/crypto/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/etc/hyperledger/crypto/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/etc/hyperledger/crypto/orderer/tls/ca.crt]
+      #OPERATION
+      - ORDERER_OPERATIONS_LISTENADDRESS=orderer1.org2.iranscm.tk:8443
+      - ORDERER_OPERATIONS_TLS_ENABLED=false
+      - ORDERER_OPERATIONS_TLS_PRIVATEKEY=/etc/hyperledger/crypto/orderer/tls/server.key
+      - ORDERER_OPERATIONS_TLS_CERTIFICATE=/etc/hyperledger/crypto/orderer/tls/server.crt
+      - ORDERER_OPERATIONS_TLS_ROOTCAS=[/etc/hyperledger/crypto/orderer/tls/ca.crt]
+      - ORDERER_OPERATIONS_TLS_CLIENTAUTHREQUIRED=false
+      #promotheus 
+      - ORDERER_METRICS_PROVIDER=prometheus
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    ports:
+      - 9050:7050
+    volumes:
+        - ./channel:/etc/hyperledger/configtx
+        - ./channel/crypto-config/ordererOrganizations/org2.iranscm.tk/orderers/orderer1.org2.iranscm.tk/:/etc/hyperledger/crypto/orderer    
+    logging:
+      options:
+        max-size: 50m    
+        
+  peer0.org2.iranscm.tk:
+    container_name: peer0.org2.iranscm.tk
+    extends:
+      file:   base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer0.org2.iranscm.tk
+      - CORE_PEER_LOCALMSPID=Org2MSP
+      - CORE_PEER_ADDRESS=peer0.org2.iranscm.tk:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org2.iranscm.tk:7051      
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.org2.iranscm.tk:7051
+      #OPERATION SETTING
+      - CORE_OPERATIONS_LISTENADDRESS=peer0.org2.iranscm.tk:9443
+      - CORE_OPERATIONS_TLS_ENABLED=false
+      - CORE_OPERATIONS_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_OPERATIONS_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_OPERATIONS_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED=false
+      #promotheus 
+      - CORE_METRICS_PROVIDER=prometheus
+    ports:
+      - 8051:7051
+      - 8053:7053
+    volumes:
+        - ./channel/crypto-config/peerOrganizations/org2.iranscm.tk/peers/peer0.org2.iranscm.tk/:/etc/hyperledger/crypto/peer
+    logging:
+      options:
+        max-size: 50m
+        
+  peer1.org2.iranscm.tk:
+    container_name: peer1.org2.iranscm.tk
+    extends:
+      file:   base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_ID=peer1.org2.iranscm.tk
+      - CORE_PEER_LOCALMSPID=Org2MSP
+      - CORE_PEER_ADDRESS=peer1.org2.iranscm.tk:7051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.org2.iranscm.tk:7051      
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org2.iranscm.tk:7051
+      #OPERATION SETTING
+      - CORE_OPERATIONS_LISTENADDRESS=peer1.org2.iranscm.tk:9443
+      - CORE_OPERATIONS_TLS_ENABLED=false
+      - CORE_OPERATIONS_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_OPERATIONS_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_OPERATIONS_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED=false
+      #promotheus 
+      - CORE_METRICS_PROVIDER=prometheus
+    ports:
+      - 8056:7051
+      - 8058:7053
+    volumes:
+        - ./channel/crypto-config/peerOrganizations/org2.iranscm.tk/peers/peer1.org2.iranscm.tk/:/etc/hyperledger/crypto/peer
+    logging:
+      options:
+        max-size: 50m  

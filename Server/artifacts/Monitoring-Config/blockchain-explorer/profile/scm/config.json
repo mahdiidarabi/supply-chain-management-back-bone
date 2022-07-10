@@ -1,0 +1,9 @@
+{
+	"network-configs": {
+		"scm": {
+			"name": "scm",
+			"profile": "./connection-profile/balance-transfer.json"
+		}
+	},
+	"license": "Apache-2.0"
+}

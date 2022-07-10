@@ -1,0 +1,37 @@
+#
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+
+  app.spsmOrg.org:
+    container_name: app.spsmOrg.com
+    image: scmapp
+    ports:
+      - 4000:4000
+      - 9222:9222
+      - 9229:9229
+#    command: bash -c "node --inspect-brk app.js" 
+    volumes:
+        - ../../Server/:/app
+    logging:
+      options:
+        max-size: 50m
+    
+  database.postgres.vm:
+    container_name: database.postgres
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=scmpass
+      - POSTGRES_USER=scmuser
+      - POSTGRES_DB=scmdb
+    ports:
+      - 5432:5432
+    logging:
+      options:
+        max-size: 50m
+
+    

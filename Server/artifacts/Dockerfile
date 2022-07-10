@@ -1,0 +1,13 @@
+FROM node:8
+
+EXPOSE 4000
+EXPOSE 9222
+EXPOSE 9229
+
+ARG NODE_ENV
+ENV NODE_ENV $NODE_ENV
+
+RUN mkdir /app
+WORKDIR /app
+CMD ["node","app.js"]
+

@@ -136,8 +136,10 @@ func (s *SmartContract) Invoke (APIstub shim.ChaincodeStubInterface) peer.Respon
 			return s.transfer(APIstub, requestSender, args)
 		case GetBalance:                    // Get the balance of user
 			return s.getBalance(APIstub, requestSender, args)
-		case GetTransactionHistoryForUser:  // Get the transaction history for each user
-			return s.getTransactionHistoryForUser(APIstub, requestSender, args)
+		case GetTransactionHistoryForUser1:  // Get the transaction history for each user when value changed
+			return s.getTransactionHistoryForUser1(APIstub, requestSender, args)
+		case GetTransactionHistoryForUser2:  // Get the transaction history for each user by delta key
+			return s.getTransactionHistoryForUser2(APIstub, requestSender, args)
 		case GetAllUsers:                   // This function gives the current state of the users with account numbers form start-key to end-key
 			return s.getAllUsers(APIstub, requestSender, args)
 		//case GetTransactionHistory:       //??
@@ -174,6 +176,14 @@ func (s *SmartContract) Invoke (APIstub shim.ChaincodeStubInterface) peer.Respon
 			return s.getUserAssetsWithPagination(APIstub, requestSender , args)
 		case ThreeInputAssets:
 			return s.threeInputAssets(APIstub, requestSender , args)
+		case GetUserTxsAsSender:
+			return s.getUserTxsAsSender(APIstub, requestSender , args)
+		case GetUserTxsAsReceiver:
+			return s.getUserTxsAsReceiver(APIstub, requestSender , args)
+		case GetUserTxs:
+			return s.getUserTxs(APIstub, requestSender , args)
+		case GetOneAssetHistoryWithPagination:
+			return s.getOneAssetHistoryWithPagination(APIstub, requestSender , args)
 		
 		default:
 			return shim.Error("Invalid Smart Contract function name1.")

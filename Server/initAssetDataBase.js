@@ -22,6 +22,7 @@ const create_AssetTable =
   first_holder BIGINT,
   current_holder BIGINT,
   is_micro_assigned BOOLEAN default false,
+  admin_init_micro BOOLEAN default false,
   micro_id VARCHAR (50) UNIQUE,
   micro_server_ip VARCHAR (50),
   micro_password TEXT,

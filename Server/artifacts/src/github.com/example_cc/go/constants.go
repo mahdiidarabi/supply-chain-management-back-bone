@@ -35,7 +35,8 @@ const (
 	// Invokable function names
 	TRANSFER                     = "transfer"
 	GetBalance                   = "getBalance"
-	GetTransactionHistoryForUser = "getTransactionHistoryForUser"
+	GetTransactionHistoryForUser1 = "getTransactionHistoryForUser1"
+	GetTransactionHistoryForUser2 = "getTransactionHistoryForUser2"	
 	GetTransactionHistory 		 = "getTransactionHistory"
 	TEST                         = "test"
 	AddUser						 = "addUser"
@@ -57,6 +58,10 @@ const (
 	GetUserAssets				 = "getUserAssets"
 	GetUserAssetsWithPagination	 = "getUserAssetsWithPagination"
 	Atomic						 = "atomic" 
+	GetUserTxsAsSender			 = "getUserTxsAsSender"
+	GetUserTxsAsReceiver		 = "getUserTxsAsReceiver"
+	GetUserTxs					 = "getUserTxs" 
+	GetOneAssetHistoryWithPagination = "getOneAssetHistoryWithPagination"
 	
 	//Object types
 	TransactionObjectType = "transaction"
@@ -66,7 +71,8 @@ const (
 	//Initial Values
 	InitialAssetType      = "notSet"
 	InitialLocation       = "notSet"
-	InitialTemp           = "0"
+	InitialTemp           = "notSet"
+	InitialHumidity		  = "notSet"
 	InitialVar            = "notSet"
 
 

@@ -89,7 +89,7 @@ func (s *SmartContract) test(APIstub shim.ChaincodeStubInterface, args []string)
 // arg[1] = AssetType
 // arg[2] = AssetVar
 /// Status == false
-// should seperate this function to two, registerAsset and confirmAsset, register called by Admins and confirm called by
+// should seperate this function to two, registerAsset and confirmAsset, register called by Admins and confirm called by source
 func (s *SmartContract) confirmAsset(APIstub shim.ChaincodeStubInterface, requestSender User, args []string) peer.Response {
 
 
@@ -165,7 +165,7 @@ func (s *SmartContract) changeProperties (APIstub shim.ChaincodeStubInterface, r
 	//}
 
 	requestAsset.Temperature = args[1]
-	requestAsset.Variable = args[2]
+	requestAsset.Humidity = args[2]
 
 
 	assetJsonAsBytes, err := json.Marshal(requestAsset)
@@ -490,11 +490,15 @@ func (s *SmartContract) threeInputAssets (APIstub shim.ChaincodeStubInterface, r
  }
 
 
-// the function below returns all of the transaction history for one asset
+
+
+//
+//
+// the function below returns one asset history 
 // @param APIstub
-// @param args The arguments array containing serialNumber
+// @param args The arguments array containing serialNumber of asset
 // @return A response string
-//serialNumber := args[0]
+//serialNumber:= args[0]
 func (s *SmartContract) getOneAssetHistory (APIstub shim.ChaincodeStubInterface, requestSender User, args []string) peer.Response {
 
 	if len(args) != 1 {
@@ -511,9 +515,9 @@ func (s *SmartContract) getOneAssetHistory (APIstub shim.ChaincodeStubInterface,
 	if err != nil || asset == (Asset{}) {
 		return shim.Error("Asset doesn't exist.")
 	}
-	if asset.Status == true {
-		return shim.Error("Asset can not be transferred. It has already reached the destination.")
-	}
+	//if asset.Status == true {
+	//	return shim.Error("Asset can not be transferred. It has already reached the destination.")
+	//}
 	iterator, err := APIstub.GetHistoryForKey(serialNumber)
 	if err != nil {
 		return shim.Error(err.Error())
@@ -566,6 +570,50 @@ func (s *SmartContract) getOneAssetHistory (APIstub shim.ChaincodeStubInterface,
 
 
 }
+
+
+
+// the function below returns one asset history with pagination
+// @param APIstub
+// @param args The arguments array containing serialNumber of asset, pageSize, bookmark
+// @return A response string
+//serialNumber:= args[0]
+//pageSize := args[1]
+//bookmark := args[2]
+func (s *SmartContract) getOneAssetHistoryWithPagination (APIstub shim.ChaincodeStubInterface, requestSender User, args []string) peer.Response {
+
+	if len(args) != 3 {
+		return shim.Error("Incorrect number of arguments. Expecting 3")
+	}
+
+	serialNumber := args[0]
+	asset, err := getAsset(APIstub, serialNumber)
+	// check whether the invoker is admin
+	// or if user, check whether she has the access
+	//if requestSender.Type != AdminOrg1 {
+	//	return shim.Error("user not authorized")
+	//}
+	if err != nil || asset == (Asset{}) {
+		return shim.Error("Asset doesn't exist.")
+	}
+
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"asset\",\"seNo\":\"%s\"}}", args[0])
+
+	pageSize, err := strconv.ParseInt(args[1], 10, 32)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	bookmark := args[2]
+
+	queryResults, err := getQueryResultForQueryStringWithPagination (APIstub, queryString, int32(pageSize), bookmark)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
+
+
+}
+
 
 
 
@@ -631,6 +679,7 @@ func (s *SmartContract) getUserAssets (APIstub shim.ChaincodeStubInterface, requ
 			
 				buffer.WriteString(", \"Value\":")
 				buffer.WriteString(string(queryResponse.Value))
+				buffer.WriteString("}")
 				//buffer.WriteString(strconv.FormatInt(queryResponse.Timestamp.Seconds,10))
 				//buffer.WriteString("}")
 				flag = true
@@ -668,13 +717,15 @@ func (s *SmartContract) getUserAssetsWithPagination (APIstub shim.ChaincodeStubI
 	}
 	bookmark := args[2]
 
-	queryResults, err := getQueryResultForQueryStringWithPagination(َAPIstub, queryString, int32(pageSize), bookmark)
+	queryResults, err := getQueryResultForQueryStringWithPagination (APIstub, queryString, int32(pageSize), bookmark)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	return shim.Success(queryResults)
 
 }
+
+
 
 // =========================================================================================
 // getQueryResultForQueryStringWithPagination executes the passed in query string with
@@ -709,7 +760,7 @@ func getQueryResultForQueryStringWithPagination(APIstub shim.ChaincodeStubInterf
 func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorInterface) (*bytes.Buffer, error) {
 	// buffer is a JSON array containing QueryResults
 	var buffer bytes.Buffer
-	buffer.WriteString("[")
+	buffer.WriteString("[[")
 
 	bArrayMemberAlreadyWritten := false
 	for resultsIterator.HasNext() {
@@ -726,7 +777,7 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
 		buffer.WriteString(queryResponse.Key)
 		buffer.WriteString("\"")
 
-		buffer.WriteString(", \"Record\":")
+		buffer.WriteString(", \"Value\":")
 		// Record is a JSON object, so we write as-is
 		buffer.WriteString(string(queryResponse.Value))
 		buffer.WriteString("}")
@@ -741,9 +792,10 @@ func constructQueryResponseFromIterator(resultsIterator shim.StateQueryIteratorI
 // addPaginationMetadataToQueryResults adds QueryResponseMetadata, which contains pagination
 // info, to the constructed query results
 // ===========================================================================================
-func addPaginationMetadataToQueryResults(buffer *bytes.Buffer, responseMetadata *pb.QueryResponseMetadata) *bytes.Buffer {
-
-	buffer.WriteString("[{\"ResponseMetadata\":{\"RecordsCount\":")
+func addPaginationMetadataToQueryResults(buffer *bytes.Buffer, responseMetadata *peer.QueryResponseMetadata) *bytes.Buffer {
+	
+	buffer.WriteString(",")
+	buffer.WriteString("{\"ResponseMetadata\":{\"RecordsCount\":")
 	buffer.WriteString("\"")
 	buffer.WriteString(fmt.Sprintf("%v", responseMetadata.FetchedRecordsCount))
 	buffer.WriteString("\"")

@@ -69,7 +69,8 @@ app.use(function (req, res, next) {
       });
       return;
     } else {
-      if (decoded.userType === 'Micro') {
+      req.userType = decoded.userType ;
+      if (req.userType === 'Micro') {
         req.microId = decoded.microId;
         req.serialNumber = decoded.serialNumber;
         logger.debug(util.format('Decoded from JWT token: microId - %s ', decoded.microId));

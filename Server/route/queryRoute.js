@@ -2,6 +2,8 @@
 
 var express = require('express');
 var router = express.Router() ;
+var log4js = require('log4js');
+var logger = log4js.getLogger('UserRoute');
 
 // ---------------------- Fabric Config -------------------
 var query = require('../fabric/query.js');

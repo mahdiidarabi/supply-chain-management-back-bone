@@ -159,6 +159,7 @@ func (s *SmartContract) initAsset(APIstub shim.ChaincodeStubInterface, requestSe
 		Holder:       assetHolder,
 		Location:     InitialLocation,
 		Temperature:  InitialTemp,
+		Humidity:	  InitialHumidity,
 		Variable:     InitialVar,
 		Status:       false,
 		RecentFunction : "AdminInitAsset",

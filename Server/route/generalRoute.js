@@ -3,10 +3,16 @@
 var jwt = require('jsonwebtoken');
 var express = require('express');
 var router = express.Router() ;
+var log4js = require('log4js');
+var logger = log4js.getLogger('UserRoute');
+
 
 // --------------------- DataBase -------------------------
 var mydb = require('../database/database_user_func.js') ;
 var assetDb = require('../database/database_asset_func.js') ;
+
+// --------------------- Fabric -------------------------------
+var query = require('../fabric/query.js');
 
 //----------------- Server Config ------------------------
 var serverConfig = require('../config-server.js') ;
@@ -139,7 +145,7 @@ router.post('/loginMicro',async function(req, res){
     if (dbResponse.assetCount != 1){
       var response = {
         "success": false,
-        "message": 'There is more than a micro with this Id',
+        // "message": 'There is more than a micro with this Id',
       }
        res.send(response) ;
        return ;
@@ -151,7 +157,7 @@ router.post('/loginMicro',async function(req, res){
         if (!dbResponseLoginCheck.success) {
           var response = {
             "success": false,
-            "message": 'can not login for micro',
+            // "message": 'can not login for micro',
           }
            res.send(response) ;
            return ;
@@ -169,10 +175,10 @@ router.post('/loginMicro',async function(req, res){
       
           var response = {
             "success": true,
-            "message": "micro login Successfully",
-            "microId": microId,
-            "serialNumber" : serialNumber ,
-            "userType" : "Micro" ,
+            // "message": "micro login Successfully",
+            // "microId": microId,
+            // "serialNumber" : serialNumber ,
+            // "userType" : "Micro" ,
             "token": token
           }
           res.send(response) ;
@@ -185,7 +191,7 @@ router.post('/loginMicro',async function(req, res){
         if (!dbResponseSetPass.success) {
           var response = {
             "success": false,
-            "message": 'can not set password for micro',
+            // "message": 'can not set password for micro',
           }
            res.send(response) ;
            return ;
@@ -203,10 +209,10 @@ router.post('/loginMicro',async function(req, res){
       
           var response = {
             "success": true,
-            "message": "micro login Successfully",
-            "microId": microId,
-            "serialNumber" : serialNumber ,
-            "userType" : "Micro" ,
+            // "message": "micro login Successfully",
+            // "microId": microId,
+            // "serialNumber" : serialNumber ,
+            // "userType" : "Micro" ,
             "token": token
           }
           res.send(response) ;
@@ -221,10 +227,83 @@ router.post('/loginMicro',async function(req, res){
 	catch(err){
 		var response = {
 		 "success": false,
-		 "message": 'Micro login was failed',
+		//  "message": 'Micro login was failed',
 	   }
 		res.send(response) ;
 	}
+});
+
+
+router.post('/GetAssetState',async function(req, res){
+
+  try {
+    logger.debug('==================== INVOKE ON CHAINCODE TO WHAT (FOR USER) ==================');
+    var serialNumber = req.body.serialNumber ;
+    var requestedPeer = req.body.peer ;
+    var args = [serialNumber];
+    // ? get last state of an asset (what)
+    var fcn = 'what';
+    var chaincodeName = 'mycc';
+    var channelName = 'mychannel';
+    var peer = requestedPeer ? requestedPeer : "peer1.org1.iranscm.tk";
+    logger.debug('channelName  : ' + channelName);
+    logger.debug('chaincodeName : ' + chaincodeName);
+    logger.debug('fcn  : ' + fcn);
+    logger.debug('args  : ' + args);
+    logger.debug('peer  : ' + peer);
+    let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, 'user1', 'Org1');
+    var response = {
+      "success" : message.success ,
+      "message" : message.message,
+      "data" : JSON.parse(message.metadata),
+    }
+    res.send(response);
+
+  }
+  catch (err) {
+    var response = {
+     "success": false,
+     "message": 'query Failed ...',
+   }
+    res.send(response) ;
+  }
+
+});
+
+router.post('/GetAssetHistory',async function(req, res){
+  try {
+    logger.debug('==================== INVOKE ON CHAINCODE TO WHAT (FOR USER) ==================');
+    var serialNumber = req.body.serialNumber ;
+    var requestedPeer = req.body.peer ;
+    var args = [serialNumber];
+    // ? get last state of an asset (what)
+    var fcn = 'getOneAssetHistory';
+    var chaincodeName = 'mycc';
+    var channelName = 'mychannel';
+    var peer = requestedPeer ? requestedPeer : "peer1.org1.iranscm.tk";
+    logger.debug('channelName  : ' + channelName);
+    logger.debug('chaincodeName : ' + chaincodeName);
+    logger.debug('fcn  : ' + fcn);
+    logger.debug('args  : ' + args);
+    logger.debug('peer  : ' + peer);
+    let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, 'user1', 'Org1');
+    var response = {
+      "success" : message.success ,
+      "message" : message.message,
+      "data" : JSON.parse(message.metadata),
+    }
+    res.send(response)
+  }
+  catch (err) {
+ 
+    
+    var response = {
+     "success": false,
+     "message": 'query Failed ...',
+   }
+    res.send(response) ;
+  }
+
 });
 
 module.exports = router

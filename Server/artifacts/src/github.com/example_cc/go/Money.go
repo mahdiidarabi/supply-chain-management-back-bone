@@ -180,14 +180,15 @@ func (s *SmartContract) getBalance(APIstub shim.ChaincodeStubInterface, requestS
 }
 
 
-// This function gets the transaction history for one specific user
+
+// This function gets the transaction history for one specific user when value is changed
 // @param APIstub
 // @param args The arguments array containing AccountNumber
 // @param 'User' model, that is the requestSender
 // @return A response promise
 // accountNumber := args[0]
 
-func (s *SmartContract) getTransactionHistoryForUser(APIstub shim.ChaincodeStubInterface,requestSender User, args []string) peer.Response {
+func (s *SmartContract) getTransactionHistoryForUser1(APIstub shim.ChaincodeStubInterface,requestSender User, args []string) peer.Response {
 
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting 1")
@@ -243,6 +244,294 @@ func (s *SmartContract) getTransactionHistoryForUser(APIstub shim.ChaincodeStubI
 	return shim.Success(buffer.Bytes())
 
 }
+
+// This function gets the transaction history for one specific user when composite key is changed
+// @param APIstub
+// @param args The arguments array containing AccountNumber
+// @param 'User' model, that is the requestSender
+// @return A response promise
+// accountNumber := args[0]
+
+func (s *SmartContract) getTransactionHistoryForUser2(APIstub shim.ChaincodeStubInterface,requestSender User, args []string) peer.Response {
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	accountNumber := args[0]
+
+	// check whether the invoker is admin
+	// or if user, check whether she has the access
+	if requestSender.AccountNumber != accountNumber && requestSender.Type != AdminOrg1 && requestSender.Type != AdminOrg2 {
+		return shim.Error("user not authorized")
+	}
+	// Get all delta rows for the variable
+	deltaResultsIterator, deltaErr := APIstub.GetStateByPartialCompositeKey(
+		TransferDeltaIndexName, []string{requestSender.AccountNumber})
+
+	if deltaErr != nil {
+		return shim.Error(fmt.Sprintf(
+			"Could not retrieve delta iterator for account %s: %s", requestSender.AccountNumber, deltaErr.Error()))
+	}
+
+	//noinspection GoUnhandledErrorResult
+	defer deltaResultsIterator.Close()
+
+	// Check the variable existed
+	if !deltaResultsIterator.HasNext() {
+		return shim.Success([]byte(fmt.Sprintf(
+			"No delta for the account number %s exists. Pruning not needed.", requestSender.AccountNumber)))
+	}
+
+	// Iterate through result set computing final value while iterating and deleting each key
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+  
+	flag := false
+	txid := ""
+	// amount:= ""
+	for deltaResultsIterator.HasNext(){
+		// Get the next row
+		responseRange, nextErr := deltaResultsIterator.Next()
+		if nextErr != nil {
+			return shim.Error(nextErr.Error())
+		}
+
+		// Split the key into its composite parts
+		_, keyParts, splitKeyErr := APIstub.SplitCompositeKey(responseRange.Key)
+		if splitKeyErr != nil {
+			return shim.Error(splitKeyErr.Error())
+		}
+
+		// Retrieve the amount
+		txid = keyParts[2]
+		// amount = keyParts[1]
+		if flag == true {
+			buffer.WriteString(",")
+		}
+	  
+		  // constructing JSOn files key/value pairs
+		  buffer.WriteString("{\"TxId\":")
+		  buffer.WriteString("\"")
+		  buffer.WriteString(txid)
+		  buffer.WriteString("\"")
+		  buffer.WriteString("}")
+		  flag = true
+		}
+		buffer.WriteString("]")
+	  
+		//for debug purposes
+		fmt.Printf("- queryfordeltatransactions:\n%s\n", buffer.String())
+	  
+		return shim.Success(buffer.Bytes())
+}
+
+// ===========================================================================================================
+//=============================================== The following functions are the 
+// Each user should know his/her txs as a sender
+// the following finction gives back the result of txs that belong to some user as sender
+// @param APIstub
+// @param args The arguments array containing accountNumber
+// @return A response string
+// 	accountnumber := args[0]
+func (s *SmartContract) getUserTxsAsSender (APIstub shim.ChaincodeStubInterface, requestSender User, args []string) peer.Response {
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	if args[0] != requestSender.AccountNumber && requestSender.Type != AdminOrg1 && requestSender.Type != AdminOrg2{
+		return shim.Error("You do not have access to see the assets!")
+	}
+
+	// User as Sender
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"transaction\",\"sender\":\"%s\"}}", args[0])
+
+			iterator, err := APIstub.GetQueryResult(queryString)
+			if err != nil {
+				return shim.Error(fmt.Sprintf("state operation failed. Error accessing state: %s", err))
+			}
+			defer iterator.Close()
+		
+			if err != nil {
+				return shim.Error(err.Error())
+			  }
+			  defer iterator.Close()
+			
+			
+			  var buffer bytes.Buffer
+			  buffer.WriteString("[")
+			
+			  flag := false
+			  for iterator.HasNext() {
+				queryResponse, err := iterator.Next()
+				if err != nil {
+				  return shim.Error(err.Error())
+				}
+			
+				if flag == true {
+				  buffer.WriteString(",")
+				}
+			
+				// constructing JSOn files key/value pairs
+				buffer.WriteString("{\"Key\":")
+				buffer.WriteString("\"")
+				buffer.WriteString(queryResponse.Key)
+				buffer.WriteString("\"")
+			
+				buffer.WriteString(", \"Value\":")
+				buffer.WriteString(string(queryResponse.Value))
+				buffer.WriteString("}")
+				//buffer.WriteString(strconv.FormatInt(queryResponse.Timestamp.Seconds,10))
+				//buffer.WriteString("}")
+				flag = true
+			  }
+	
+			  buffer.WriteString("]")
+			
+			  //for debug purposes
+			  fmt.Printf("- queryAllTxforuserAsSender:\n%s\n", buffer.String())
+			
+			  return shim.Success(buffer.Bytes())
+}
+
+
+
+// Each user should know his/her txs as a receiver
+// the following finction gives back the result of txs that belong to some user as receiver
+// @param APIstub
+// @param args The arguments array containing accountNumber
+// @return A response string
+// 	accountnumber := args[0]
+func (s *SmartContract) getUserTxsAsReceiver (APIstub shim.ChaincodeStubInterface, requestSender User, args []string) peer.Response {
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	if args[0] != requestSender.AccountNumber && requestSender.Type != AdminOrg1 && requestSender.Type != AdminOrg2{
+		return shim.Error("You do not have access to see the assets!")
+	}
+
+	// User as Sender
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"transaction\",\"receiver\":\"%s\"}}", args[0])
+
+			iterator, err := APIstub.GetQueryResult(queryString)
+			if err != nil {
+				return shim.Error(fmt.Sprintf("state operation failed. Error accessing state: %s", err))
+			}
+			defer iterator.Close()
+		
+			if err != nil {
+				return shim.Error(err.Error())
+			  }
+			  defer iterator.Close()
+			
+			
+			  var buffer bytes.Buffer
+			  buffer.WriteString("[")
+			
+			  flag := false
+			  for iterator.HasNext() {
+				queryResponse, err := iterator.Next()
+				if err != nil {
+				  return shim.Error(err.Error())
+				}
+			
+				if flag == true {
+				  buffer.WriteString(",")
+				}
+			
+				// constructing JSOn files key/value pairs
+				buffer.WriteString("{\"Key\":")
+				buffer.WriteString("\"")
+				buffer.WriteString(queryResponse.Key)
+				buffer.WriteString("\"")
+			
+				buffer.WriteString(", \"Value\":")
+				buffer.WriteString(string(queryResponse.Value))
+				buffer.WriteString("}")
+				//buffer.WriteString(strconv.FormatInt(queryResponse.Timestamp.Seconds,10))
+				//buffer.WriteString("}")
+				flag = true
+			  }
+	
+			  buffer.WriteString("]")
+			
+			  //for debug purposes
+			  fmt.Printf("- queryAllTxforuserAsReceiver:\n%s\n", buffer.String())
+			
+			  return shim.Success(buffer.Bytes())
+}
+
+// Each user should know all his/her txs 
+// the following finction gives back the result of txs that belong to some user 
+// @param APIstub
+// @param args The arguments array containing accountNumber
+// @return A response string
+// 	accountnumber := args[0]
+func (s *SmartContract) getUserTxs (APIstub shim.ChaincodeStubInterface, requestSender User, args []string) peer.Response {
+
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	if args[0] != requestSender.AccountNumber && requestSender.Type != AdminOrg1 && requestSender.Type != AdminOrg2{
+		return shim.Error("You do not have access to see the assets!")
+	}
+
+	// User as Sender
+	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"transaction\",\"$or\":[{\"sender\":\"%s\"},{\"receiver\":\"%s\"}]}}", args[0],args[0])
+
+			iterator, err := APIstub.GetQueryResult(queryString)
+			if err != nil {
+				return shim.Error(fmt.Sprintf("state operation failed. Error accessing state: %s", err))
+			}
+			defer iterator.Close()
+		
+			if err != nil {
+				return shim.Error(err.Error())
+			  }
+			  defer iterator.Close()
+			
+			
+			  var buffer bytes.Buffer
+			  buffer.WriteString("[")
+			
+			  flag := false
+			  for iterator.HasNext() {
+				queryResponse, err := iterator.Next()
+				if err != nil {
+				  return shim.Error(err.Error())
+				}
+			
+				if flag == true {
+				  buffer.WriteString(",")
+				}
+			
+				// constructing JSOn files key/value pairs
+				buffer.WriteString("{\"Key\":")
+				buffer.WriteString("\"")
+				buffer.WriteString(queryResponse.Key)
+				buffer.WriteString("\"")
+			
+				buffer.WriteString(", \"Value\":")
+				buffer.WriteString(string(queryResponse.Value))
+				buffer.WriteString("}")
+				//buffer.WriteString(strconv.FormatInt(queryResponse.Timestamp.Seconds,10))
+				//buffer.WriteString("}")
+				flag = true
+			  }
+	
+			  buffer.WriteString("]")
+			
+			  //for debug purposes
+			  fmt.Printf("- queryAllTxforuserAsReceiver:\n%s\n", buffer.String())
+			
+			  return shim.Success(buffer.Bytes())
+}
+
+
 
 // This function gets all the users
 // @param APIstub

@@ -12,8 +12,7 @@ var assetDb = require('../database/database_asset_func.js');
 // --------------------- Fabric -------------------------------
 var invoke = require('../fabric/invoke-transaction.js');
 var query = require('../fabric/query.js');
-var helper = require('../fabric/helper.js');
-var helperCA = require('../fabric/helper-CA.js');
+
 
 // -------------------- Error Function -------------------
 function getErrorMessage(field) {
@@ -45,6 +44,7 @@ router.post('/GetBalance',async function(req, res){
     var chaincodeName = 'mycc';
     var channelName = 'mychannel';
     var peer = requestedPeer ? requestedPeer : "peer0.org1.iranscm.tk";
+    
     logger.debug('channelName  : ' + channelName);
     logger.debug('chaincodeName : ' + chaincodeName);
     logger.debug('fcn  : ' + fcn);
@@ -554,9 +554,10 @@ router.post('/UserAssets',async function(req, res){
     logger.debug('==================== INVOKE ON CHAINCODE TO WHAT (FOR USER) ==================');
     var accountNumber = req.accountNumber ;
     var requestedPeer = req.body.peer ;
-    var args = [accountNumber];
-    // ? get last state of an asset (what)
-    var fcn = 'getUserAssets';
+    var limit = req.body.limit ? req.body.limit : "5"  ;
+    var bookmark = req.body.next ? req.body.next : "" ;
+    var args = [accountNumber,limit,bookmark];
+    var fcn = 'getUserAssetsWithPagination';
     var chaincodeName = 'mycc';
     var channelName = 'mychannel';
     var peer = requestedPeer ? requestedPeer : "peer0.org1.iranscm.tk";
@@ -567,10 +568,12 @@ router.post('/UserAssets',async function(req, res){
     logger.debug('peer  : ' + peer);
     let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, req.username, req.orgname);
     console.log("message is" + JSON.stringify(message) );
+    var metadata = JSON.parse(message.metadata) ;
     var response = {
       "success" : message.success ,
       "message" : message.message,
-      "data" : JSON.parse(message.metadata),
+      "data" : metadata[0],
+      "next" : metadata[1].ResponseMetadata.Bookmark
     }
     res.send(response)
   }
@@ -586,15 +589,86 @@ router.post('/UserAssets',async function(req, res){
 });
 
 
+router.post('/GetTransactionHistory1',async function(req, res){
+  try {
+    logger.debug('==================== INVOKE ON CHAINCODE TO WHAT (FOR USER) ==================');
+    var requestedPeer = req.body.peer ;
+    var args = [req.accountNumber];
+    var fcn = 'getTransactionHistoryForUser1';
+    var chaincodeName = 'mycc';
+    var channelName = 'mychannel';
+    var peer = requestedPeer ? requestedPeer : "peer0.org1.iranscm.tk";
+    logger.debug('channelName  : ' + channelName);
+    logger.debug('chaincodeName : ' + chaincodeName);
+    logger.debug('fcn  : ' + fcn);
+    logger.debug('args  : ' + args);
+    logger.debug('peer  : ' + peer);
+    let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, req.username, req.orgname);
+    var response = {
+      "success" : message.success ,
+      "message" : message.message,
+      "data" : JSON.parse(message.metadata),
+    }
+    res.send(response)
+  }
+  catch (err) {
+    var response = {
+     "success": false,
+     "message": 'query Failed ...',
+   }
+    res.send(response) ;
+  }
+
+});
+
+
+
+
+router.post('/GetTransactionHistory2',async function(req, res){
+  try {
+    logger.debug('==================== INVOKE ON CHAINCODE TO WHAT (FOR USER) ==================');
+    var requestedPeer = req.body.peer ;
+    var args = [req.accountNumber];
+    var fcn = 'getTransactionHistoryForUser2';
+    var chaincodeName = 'mycc';
+    var channelName = 'mychannel';
+    var peer = requestedPeer ? requestedPeer : "peer0.org1.iranscm.tk";
+    logger.debug('channelName  : ' + channelName);
+    logger.debug('chaincodeName : ' + chaincodeName);
+    logger.debug('fcn  : ' + fcn);
+    logger.debug('args  : ' + args);
+    logger.debug('peer  : ' + peer);
+    let message = await query.queryChaincode(peer, channelName, chaincodeName, args, fcn, req.username, req.orgname);
+    var response = {
+      "success" : message.success ,
+      "message" : message.message,
+      "data" : JSON.parse(message.metadata),
+    }
+    res.send(response)
+  }
+  catch (err) {
+    var response = {
+     "success": false,
+     "message": 'query Failed ...',
+   }
+    res.send(response) ;
+  }
+
+});
+
+
+
+
+
 router.post('/GetTransactionHistory',async function(req, res){
   try {
     logger.debug('==================== INVOKE ON CHAINCODE TO WHAT (FOR USER) ==================');
     var requestedPeer = req.body.peer ;
     var args = [req.accountNumber];
-    var fcn = 'getTransactionHistoryForUser';
+    var fcn = 'getUserTxs';
     var chaincodeName = 'mycc';
     var channelName = 'mychannel';
-    var peer = requestedPeer ? requestedPeer : "peer1.org1.iranscm.tk";
+    var peer = requestedPeer ? requestedPeer : "peer0.org1.iranscm.tk";
     logger.debug('channelName  : ' + channelName);
     logger.debug('chaincodeName : ' + chaincodeName);
     logger.debug('fcn  : ' + fcn);

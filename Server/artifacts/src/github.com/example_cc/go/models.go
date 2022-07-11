@@ -34,6 +34,7 @@ type Asset struct{
 	AssetType 	   string 	 `json:"type"`   // what kind of fish?
 	Location 	   string	 `json:"location"`
 	Temperature    string	 `json:"temperature"`
+	Humidity       string	 `json:"humidity"`
 	Variable       string	 `json:"variable"`
 	Status         bool      `json:"status"`  // if true reached the destination
 }

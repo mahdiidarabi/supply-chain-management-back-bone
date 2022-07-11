@@ -7,11 +7,13 @@ version: '2'
 
 services:
 
-  app.spsmOrg.org:
-    container_name: app.spsmOrg.com
-    image: scmapp
+  testapp.spsmOrg.org:
+    container_name: testapp.spsmOrg.com
+    image: scmtestapp
     ports:
-      - 4000:4000
+      - 6000:4000
+      - 9222:9222
+      - 9229:9229 
     volumes:
         - ../../Server/:/app
     logging:

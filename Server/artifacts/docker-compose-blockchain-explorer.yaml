@@ -14,7 +14,7 @@ networks:
 services:
 
   explorerdb.mynetwork.com:
-    image: hyperledger/explorer-db:latest
+    image: hyperledger/explorer-db:1.0.0  
     container_name: explorerdb.mynetwork.com
     hostname: explorerdb.mynetwork.com
     environment:
@@ -31,7 +31,7 @@ services:
         max-size: 50m  
 
   explorer.mynetwork.com:
-    image: hyperledger/explorer:latest
+    image: hyperledger/explorer:1.0.0 
     container_name: explorer.mynetwork.com
     hostname: explorer.mynetwork.com
     environment:
@@ -44,7 +44,7 @@ services:
       - ./Monitoring-Config/blockchain-explorer/profile/scm/connection-profile:/opt/explorer/app/platform/fabric/connection-profile
       - ./Monitoring-Config/blockchain-explorer/profile/scm/crypto:/tmp/crypto
       #- walletstore:/opt/wallet
-    command: sh -c "sleep 16&& node /opt/explorer/main.js && tail -f /dev/null"
+    command: sh -c "sleep 16 && node /opt/explorer/main.js && tail -f /dev/null"
     ports:
       - 8090:8080
     networks:

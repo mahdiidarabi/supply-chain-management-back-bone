@@ -13,13 +13,15 @@ services:
     ports:
       - 6000:4000
       - 9222:9222
-      - 9229:9229 
+      - 9229:9229
     volumes:
-        - ../../Server/:/app
+      - ../../Server/:/app
+      - /app/node_modules
+      
     logging:
       options:
         max-size: 50m
-    
+
   database.postgres.vm:
     container_name: database.postgres
     image: postgres
@@ -32,5 +34,3 @@ services:
     logging:
       options:
         max-size: 50m
-
-    

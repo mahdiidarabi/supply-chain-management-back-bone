@@ -36,7 +36,6 @@ function restartNetwork() {
 		(
 		echo "----------- building scmapp ... --------------"
 		
-		cd ./artifacts/
 		docker build -t scmapp .
 		)
         else
@@ -62,18 +61,6 @@ function restartNetwork() {
 	echo
 }
 
-function installNodeModules() {
-	echo
-	if [ -d node_modules ]; then
-		echo "============== node modules installed already ============="
-	else
-		echo "============== Installing node modules ============="
-		npm install
-	fi
-	echo
-}
-
-
 function dbConstruct() {
 	docker exec -it app.spsmOrg.com node ./initUserDataBase.js drop
 	docker exec -it app.spsmOrg.com node ./initUserDataBase.js create
@@ -94,8 +81,6 @@ function dbConstruct() {
 
 
 
-
-installNodeModules
 restartNetwork
 sleep 10
 dbConstruct
